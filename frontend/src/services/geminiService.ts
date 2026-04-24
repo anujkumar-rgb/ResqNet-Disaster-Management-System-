@@ -68,12 +68,12 @@ export async function optimizeRoute(report: Report, team: Team): Promise<RouteOp
     Type: ${report.type}
     Narrative: ${report.description}
     Priority: ${report.priority}
-    Target Location: ${report.location.latitude}, ${report.location.longitude}
+    Target Location: ${report.latitude}, ${report.longitude}
     
     RESCUE ASSET:
     Name: ${team.name}
     Type: ${team.type}
-    Current Position: ${team.currentLocation.latitude}, ${team.currentLocation.longitude}
+    Current Position: ${team.latitude}, ${team.longitude}
     
     ENVIRONMENTAL FACTORS (Simulated Real-Time):
     - Weather: Active monsoon warnings, 45mm rainfall in last hour.
