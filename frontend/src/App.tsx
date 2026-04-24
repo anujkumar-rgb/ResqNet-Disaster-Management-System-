@@ -60,16 +60,8 @@ function AppContent() {
 
 function RoleRedirect({ profile }: { profile: UserProfile | null }) {
   if (!profile) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-bg-dark text-text-primary">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-brand-red" />
-          <p className="text-xs font-mono uppercase tracking-widest text-text-secondary animate-pulse text-center px-4">
-            Initializing Encrypted Connection...
-          </p>
-        </div>
-      </div>
-    );
+    // If we have a user but no profile, redirect to login to reset or just go to citizen as default
+    return <Navigate to="/citizen" replace />;
   }
   if (profile.role === 'admin') return <Navigate to="/admin" replace />;
   if (profile.role === 'rescue_team') return <Navigate to="/rescue" replace />;

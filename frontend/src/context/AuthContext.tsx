@@ -21,9 +21,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+      const sUser = session?.user ?? null;
+      setUser(sUser);
+      if (sUser) {
+        fetchProfile(sUser);
       } else {
         setLoading(false);
       }
@@ -35,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
       
       if (currentUser) {
-        await fetchProfile(currentUser.id);
+        await fetchProfile(currentUser);
       } else {
         setProfile(null);
         setLoading(false);
@@ -45,48 +46,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (sUser: User) => {
     try {
       const { data: userProfile, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('id', sUser.id)
         .single();
 
       if (error && error.code === 'PGRST116') {
         // Profile doesn't exist, create it (bootstrap)
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const role = user.email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen';
-          const newProfile: UserProfile = {
-            id: user.id,
-            email: user.email || 'guest@demo.sys',
-            role: role as UserRole,
-            display_name: user.user_metadata?.full_name || 'Anonymous Guest',
-          };
-          const { data: createdProfile, error: insertError } = await supabase
-            .from('users')
-            .insert(newProfile)
-            .select()
-            .single();
-          
-          if (!insertError) setProfile(createdProfile);
+        const role = sUser.email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen';
+        const newProfile: UserProfile = {
+          id: sUser.id,
+          email: sUser.email || 'guest@demo.sys',
+          role: role as UserRole,
+          display_name: sUser.user_metadata?.full_name || 'Anonymous Guest',
+        };
+        const { data: createdProfile, error: insertError } = await supabase
+          .from('users')
+          .insert(newProfile)
+          .select()
+          .single();
+        
+        if (!insertError) {
+          setProfile(createdProfile);
+        } else {
+          // Fallback if insert fails
+          setProfile(newProfile);
         }
       } else if (!error) {
         setProfile(userProfile);
       } else {
-        console.warn("Profile fetch error, using temporary session data:", error);
-        // Fallback for cases where DB is not fully synced but Auth is
+        console.warn("Profile fetch error, using fallback:", error);
         setProfile({
-          id: userId,
-          email: user?.email || '',
-          role: (user?.email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen') as UserRole,
-          display_name: user?.user_metadata?.full_name || 'User'
+          id: sUser.id,
+          email: sUser.email || '',
+          role: (sUser.email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen') as UserRole,
+          display_name: sUser.user_metadata?.full_name || 'User'
         });
       }
     } catch (err) {
       console.error("Critical Auth/Profile Error:", err);
-      setLoading(false);
     } finally {
       setLoading(false);
     }
