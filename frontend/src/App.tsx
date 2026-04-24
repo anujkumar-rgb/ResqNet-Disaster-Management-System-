@@ -21,6 +21,20 @@ export default function App() {
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
+  
+  const isEnvMissing = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (isEnvMissing) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-black text-red-500 p-10 text-center">
+        <AlertCircle className="w-12 h-12 mb-4" />
+        <h2 className="text-xl font-bold uppercase tracking-widest mb-2">Configuration Error</h2>
+        <p className="text-xs font-mono text-gray-500 max-w-md">
+          Supabase Environment Variables are missing. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel Project Settings.
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

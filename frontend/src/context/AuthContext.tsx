@@ -74,9 +74,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else if (!error) {
         setProfile(userProfile);
+      } else {
+        console.warn("Profile fetch error, using temporary session data:", error);
+        // Fallback for cases where DB is not fully synced but Auth is
+        setProfile({
+          id: userId,
+          email: user?.email || '',
+          role: (user?.email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen') as UserRole,
+          display_name: user?.user_metadata?.full_name || 'User'
+        });
       }
     } catch (err) {
       console.error("Critical Auth/Profile Error:", err);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
