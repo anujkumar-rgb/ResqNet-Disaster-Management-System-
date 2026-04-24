@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, User, Calendar, Loader2, ArrowRight, UserPlus, LogIn, Award } from 'lucide-react';
+import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -10,36 +10,50 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states (Registration only)
+  // Form states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [dob, setDob] = useState('');
 
-  const handleQuickJoin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error: guestError } = await supabase.auth.signInAnonymously({
-        options: {
-          data: {
-            full_name: fullName,
-            dob: dob
-          }
-        }
-      });
-      
-      if (guestError) throw guestError;
-      
-      if (data.user) {
-        const { error: profileError } = await supabase.from('users').insert({
-          id: data.user.id,
-          email: 'guest@demo.sys',
-          display_name: fullName,
-          role: 'citizen',
-          date_of_birth: dob,
+      if (activeTab === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        if (profileError) console.error("Profile Error:", profileError);
+        if (error) throw error;
+      } else {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              dob: dob
+            }
+          }
+        });
+        
+        if (signUpError) throw signUpError;
+        
+        if (data.user) {
+          // Explicit profile insert
+          await supabase.from('users').insert({
+            id: data.user.id,
+            email: email,
+            display_name: fullName,
+            role: 'citizen',
+            date_of_birth: dob,
+          });
+          alert("Account created successfully! You can now login.");
+          setActiveTab('login');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
@@ -48,201 +62,152 @@ export default function AuthPage() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: 'anujjha@gmail.com',
-        password: 'anujjha'
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError("Demo account login failed. Ensure the user 'anujjha@gmail.com' exists in Supabase Auth.");
-    } finally {
-      setLoading(false);
-    }
+  const fillDemoData = () => {
+    setEmail('anujjha@gmail.com');
+    setPassword('anujjha');
+    setActiveTab('login');
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center p-4 selection:bg-brand-red/30">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-red/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-emerald/5 blur-[120px] rounded-full" />
-      </div>
-
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-[#111114] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative z-10"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
-          <motion.div 
-            className="h-full bg-brand-red"
-            initial={{ width: '50%' }}
-            animate={{ width: activeTab === 'login' ? '50%' : '100%' }}
-          />
+        <div className="bg-brand-red p-8 text-white text-center">
+          <Shield className="w-12 h-12 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold tracking-tight">ResqNet Login</h1>
+          <p className="text-red-100 text-sm mt-1">Emergency Management System</p>
         </div>
 
-        <div className="p-8 pt-10">
-          <div className="flex flex-col items-center mb-10">
-            <motion.div 
-              whileHover={{ rotate: 5, scale: 1.05 }}
-              className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-6 ring-1 ring-white/10"
-            >
-              <Shield className="w-8 h-8 text-brand-red" />
-            </motion.div>
-            <h1 className="text-2xl font-black text-white tracking-[0.2em] uppercase italic">
-              RESQ<span className="text-brand-red">NET</span>
-            </h1>
-            <p className="text-gray-500 text-[10px] mt-2 uppercase tracking-[0.3em] font-mono font-bold text-center">
-              Emergency Command Access
-            </p>
-          </div>
-
-          <div className="flex bg-black/40 p-1 rounded-xl mb-8 border border-white/5">
+        <div className="p-8">
+          {/* Simple Tab Switcher */}
+          <div className="flex border-b border-gray-100 mb-8">
             <button 
               onClick={() => setActiveTab('login')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'login' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 pb-4 text-sm font-semibold transition-all ${activeTab === 'login' ? 'text-brand-red border-b-2 border-brand-red' : 'text-gray-400'}`}
             >
-              <LogIn className="w-3.5 h-3.5" />
-              Agent Access
+              Login
             </button>
             <button 
               onClick={() => setActiveTab('register')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'register' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 pb-4 text-sm font-semibold transition-all ${activeTab === 'register' ? 'text-brand-red border-b-2 border-brand-red' : 'text-gray-400'}`}
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              Quick Join
+              Register
             </button>
           </div>
 
-          <AnimatePresence mode="wait">
-            {activeTab === 'login' ? (
-              <motion.div 
-                key="login-tab"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="space-y-6"
-              >
-                <div className="text-center p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-                  <Award className="w-8 h-8 text-brand-emerald mx-auto mb-3" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Judicial/Admin Access</h3>
-                  <p className="text-[10px] text-gray-500 font-mono uppercase leading-relaxed">
-                    Access the complete Emergency Command Dashboard with full administrative privileges.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleDemoLogin}
-                  disabled={loading}
-                  className="w-full bg-brand-red hover:bg-red-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all group relative overflow-hidden shadow-[0_10px_30px_-10px_rgba(220,38,38,0.5)]"
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <AnimatePresence mode="wait">
+              {activeTab === 'register' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 overflow-hidden"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                    <>
-                      <span className="relative tracking-[0.2em] uppercase text-xs italic">
-                        Authorize as System Admin
-                      </span>
-                      <ArrowRight className="w-4 h-4 relative group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-
-                {error && (
-                  <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-brand-red text-[10px] font-mono uppercase text-center">
-                    {error}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                      />
+                    </div>
                   </div>
-                )}
-              </motion.div>
-            ) : (
-              <motion.form 
-                key="register-tab"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                onSubmit={handleQuickJoin} 
-                className="space-y-5"
-              >
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Your Full Name</label>
-                  <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="ENTER NAME"
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all font-mono"
-                    />
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Date of Birth</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="date"
+                        required
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                      />
+                    </div>
                   </div>
-                </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Date of Birth</label>
-                  <div className="relative group">
-                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
-                    <input
-                      type="date"
-                      required
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all font-mono uppercase"
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-brand-red text-[10px] font-mono uppercase text-center">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-white/10 hover:bg-white/20 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all group"
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                    <>
-                      <span className="relative tracking-[0.2em] uppercase text-xs">
-                        Join as Citizen Unit
-                      </span>
-                      <ArrowRight className="w-4 h-4 relative group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
-
-          <div className="mt-8 flex flex-col gap-4">
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/5"></div>
-              </div>
-              <div className="relative flex justify-center text-[8px] uppercase tracking-[0.3em] font-mono">
-                <span className="px-3 bg-[#111114] text-gray-600">Alternative Bridge</span>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                />
               </div>
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs text-center font-medium">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand-red hover:bg-red-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-100"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                <>
+                  {activeTab === 'login' ? 'Sign In' : 'Create Account'}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
+            <button
+              onClick={fillDemoData}
+              className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold py-3 rounded-lg border border-emerald-100 transition-all"
+            >
+              Judges: Login as Demo Admin
+            </button>
+
             <button
               onClick={() => signInWithGoogle()}
-              className="w-full bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all"
+              className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold py-3 rounded-lg flex items-center justify-center gap-3 transition-all"
             >
-              <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100" alt="Google" />
-              <span className="text-[10px] uppercase tracking-[0.2em]">Sign in with Google</span>
+              <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
+              Sign in with Google
             </button>
           </div>
         </div>
 
-        <div className="bg-black/40 p-4 flex justify-between items-center border-t border-white/5">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-brand-emerald animate-pulse" />
-            <p className="text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em]">Deployment Alpha Active</p>
-          </div>
-          <p className="text-[8px] text-gray-700 font-mono uppercase tracking-[0.1em]">ResqNet Control</p>
+        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
+          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">ResqNet © 2026</p>
         </div>
       </motion.div>
     </div>
