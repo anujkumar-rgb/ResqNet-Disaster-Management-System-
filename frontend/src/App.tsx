@@ -37,7 +37,7 @@ function AppContent() {
         <Route path="/login" element={user ? <RoleRedirect profile={profile} /> : <AuthPage />} />
         <Route path="/citizen" element={user ? <CitizenPanel /> : <Navigate to="/login" />} />
         <Route path="/admin" element={profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} />
-        <Route path="/rescue" element={profile?.role === 'rescue_team' ? <RescueTeamPanel /> : <Navigate to="/login" />} />
+        <Route path="/rescue" element={profile?.role === 'rescue_team' || profile?.role === 'admin' ? <RescueTeamPanel /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

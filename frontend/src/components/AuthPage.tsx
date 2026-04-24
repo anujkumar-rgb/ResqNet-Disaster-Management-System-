@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight } from 'lucide-react';
+import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -43,7 +43,6 @@ export default function AuthPage() {
         if (signUpError) throw signUpError;
         
         if (data.user) {
-          // Explicit profile insert
           await supabase.from('users').insert({
             id: data.user.id,
             email: email,
@@ -62,37 +61,55 @@ export default function AuthPage() {
     }
   };
 
-  const fillDemoData = () => {
-    setEmail('anujjha@gmail.com');
-    setPassword('anujjha');
-    setActiveTab('login');
+  const fillDemoData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: 'anujjha@gmail.com',
+        password: 'anujjha'
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError("Demo account login failed. Please ensure 'anujjha@gmail.com' exists in your Supabase Auth.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
-      >
-        <div className="bg-brand-red p-8 text-white text-center">
-          <Shield className="w-12 h-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold tracking-tight">ResqNet Login</h1>
-          <p className="text-red-100 text-sm mt-1">Emergency Management System</p>
-        </div>
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 selection:bg-brand-red/30">
+      {/* Subtle Background Glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-red/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-brand-emerald/5 blur-[120px] rounded-full" />
+      </div>
 
-        <div className="p-8">
-          {/* Simple Tab Switcher */}
-          <div className="flex border-b border-gray-100 mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-[#0f0f12] rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] border border-white/[0.05] overflow-hidden relative z-10"
+      >
+        <div className="p-10">
+          <div className="flex flex-col items-center mb-10">
+            <div className="w-14 h-14 bg-brand-red/10 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-brand-red/20 shadow-lg shadow-brand-red/5">
+              <Shield className="w-7 h-7 text-brand-red" />
+            </div>
+            <h1 className="text-2xl font-black text-white tracking-tight">RESQNET</h1>
+            <p className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-mono font-bold mt-2">Emergency Response Protocol</p>
+          </div>
+
+          {/* Tab Switcher */}
+          <div className="flex bg-white/[0.02] p-1 rounded-2xl mb-8 border border-white/[0.05]">
             <button 
               onClick={() => setActiveTab('login')}
-              className={`flex-1 pb-4 text-sm font-semibold transition-all ${activeTab === 'login' ? 'text-brand-red border-b-2 border-brand-red' : 'text-gray-400'}`}
+              className={`flex-1 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${activeTab === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'}`}
             >
               Login
             </button>
             <button 
               onClick={() => setActiveTab('register')}
-              className={`flex-1 pb-4 text-sm font-semibold transition-all ${activeTab === 'register' ? 'text-brand-red border-b-2 border-brand-red' : 'text-gray-400'}`}
+              className={`flex-1 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${activeTab === 'register' ? 'bg-white/10 text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'}`}
             >
               Register
             </button>
@@ -107,30 +124,30 @@ export default function AuthPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-4 overflow-hidden"
                 >
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Full Name</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Full Identity Name</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
                       <input
                         type="text"
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                        placeholder="e.g. Anuj Kumar"
+                        className="w-full bg-white/[0.03] border border-white/[0.08] rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all placeholder:text-gray-700"
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Date of Birth</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Date of Birth</label>
+                    <div className="relative group">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
                       <input
                         type="date"
                         required
                         value={dob}
                         onChange={(e) => setDob(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                        className="w-full bg-white/[0.03] border border-white/[0.08] rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -138,38 +155,38 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Terminal ID (Email)</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                  placeholder="name@protocol.sys"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all placeholder:text-gray-700"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Access Key (Password)</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all placeholder:text-gray-700"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs text-center font-medium">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-[10px] font-mono uppercase text-center">
                 {error}
               </div>
             )}
@@ -177,37 +194,48 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-red hover:bg-red-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-100"
+              className="w-full bg-brand-red hover:bg-red-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-brand-red/10 group mt-4"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <>
-                  {activeTab === 'login' ? 'Sign In' : 'Create Account'}
-                  <ArrowRight className="w-4 h-4" />
+                  <span className="tracking-[0.1em] text-xs uppercase">{activeTab === 'login' ? 'Initiate Link' : 'Register Identity'}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
+          <div className="mt-8 flex flex-col gap-4">
             <button
               onClick={fillDemoData}
-              className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold py-3 rounded-lg border border-emerald-100 transition-all"
+              disabled={loading}
+              className="w-full bg-brand-emerald/10 border border-brand-emerald/20 hover:bg-brand-emerald/20 text-brand-emerald font-bold py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-sm"
             >
-              Judges: Login as Demo Admin
+              <Star className="w-4 h-4" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Judges: Authorize Demo Access</span>
             </button>
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/[0.05]"></div>
+              </div>
+              <div className="relative flex justify-center text-[8px] uppercase tracking-[0.3em] font-mono">
+                <span className="px-3 bg-[#0f0f12] text-gray-700">OAuth Bridge</span>
+              </div>
+            </div>
 
             <button
               onClick={() => signInWithGoogle()}
-              className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold py-3 rounded-lg flex items-center justify-center gap-3 transition-all"
+              className="w-full bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all"
             >
-              <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
-              Sign in with Google
+              <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale opacity-50" alt="Google" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Sign in with Google</span>
             </button>
           </div>
         </div>
 
-        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">ResqNet © 2026</p>
+        <div className="bg-black/20 p-4 text-center border-t border-white/[0.05]">
+          <p className="text-[8px] text-gray-700 font-mono uppercase tracking-[0.2em]">ResqNet Deployment v4.2 Alpha</p>
         </div>
       </motion.div>
     </div>

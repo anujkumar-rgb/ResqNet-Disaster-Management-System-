@@ -145,7 +145,7 @@ export default function AdminDashboard() {
             <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest text-opacity-70">CONTROL CENTER ALPHA • GLOBAL SECTOR 01 • {new Date().toLocaleTimeString()} UTC</p>
           </div>
         </div>
-        <div className="flex gap-6">
+        <div className="flex items-center gap-6">
           <div className="text-right">
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">Avg Response Time</p>
             <p className="text-lg font-mono text-brand-emerald font-bold tracking-tighter">4:22 <span className="text-[10px] text-opacity-50">MIN</span></p>
@@ -154,9 +154,15 @@ export default function AdminDashboard() {
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">Active Cases</p>
             <p className="text-lg font-mono text-white font-bold tracking-tighter">{activeReports.length} <span className="text-[10px] text-brand-red text-opacity-80">CRITICAL</span></p>
           </div>
-          <button onClick={signOut} className="text-text-secondary hover:text-white transition-colors ml-4 p-2">
-            <Zap className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2 ml-4">
+            <a href="/citizen" className="bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[10px] font-bold px-4 py-2 rounded-lg transition-all uppercase tracking-widest flex items-center gap-2">
+              <Users className="w-3.5 h-3.5" />
+              Citizen View
+            </a>
+            <button onClick={signOut} className="bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all p-2 rounded-lg" title="Sign Out">
+              <Zap className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 
