@@ -1,4 +1,22 @@
 -- ResqNet Supabase Database Schema
+-- Run this in the Supabase SQL Editor to initialize or reset your database.
+
+-- Cleanup existing (optional, for clean re-runs)
+drop table if exists public.broadcasts cascade;
+drop table if exists public.resources cascade;
+drop table if exists public.teams cascade;
+drop table if exists public.reports cascade;
+drop table if exists public.users cascade;
+
+-- Drop existing types if they exist
+drop type if exists user_role cascade;
+drop type if exists incident_type cascade;
+drop type if exists report_status cascade;
+drop type if exists priority_level cascade;
+drop type if exists team_type cascade;
+drop type if exists team_status cascade;
+drop type if exists resource_type cascade;
+drop type if exists sender_type cascade;
 
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
@@ -107,13 +125,13 @@ create trigger handle_resources_updated_at
 
 -- Row Level Security (RLS)
 
--- Users: Read by all authenticated users, update by owner or admin
+-- Users
 alter table public.users enable row level security;
 create policy "Users are viewable by everyone" on public.users for select to authenticated using (true);
 create policy "Users can insert own profile" on public.users for insert to authenticated with check (auth.uid() = id);
 create policy "Users can update own profile" on public.users for update to authenticated using (auth.uid() = id);
 
--- Reports: Viewable by everyone, insert by authenticated, update by owner or admin/assigned team
+-- Reports
 alter table public.reports enable row level security;
 create policy "Reports are viewable by everyone" on public.reports for select to authenticated using (true);
 create policy "Anyone can insert a report" on public.reports for insert to authenticated with check (auth.uid() = reporter_id);
@@ -124,7 +142,7 @@ create policy "Admins and assigned teams can update reports" on public.reports f
   exists (select 1 from public.teams where leader_id = auth.uid() and assigned_report_id = public.reports.id)
 );
 
--- Teams: Viewable by everyone, update by owner or admin
+-- Teams
 alter table public.teams enable row level security;
 create policy "Teams are viewable by everyone" on public.teams for select to authenticated using (true);
 create policy "Teams can be updated by leaders" on public.teams for update to authenticated using (auth.uid() = leader_id);
@@ -132,14 +150,14 @@ create policy "Admins can manage teams" on public.teams for all to authenticated
   exists (select 1 from public.users where id = auth.uid() and role = 'admin')
 );
 
--- Resources: Viewable by everyone, manage by admin
+-- Resources
 alter table public.resources enable row level security;
 create policy "Resources are viewable by everyone" on public.resources for select to authenticated using (true);
 create policy "Admins can manage resources" on public.resources for all to authenticated using (
   exists (select 1 from public.users where id = auth.uid() and role = 'admin')
 );
 
--- Broadcasts: Viewable by everyone, insert by authenticated
+-- Broadcasts
 alter table public.broadcasts enable row level security;
 create policy "Broadcasts are viewable by everyone" on public.broadcasts for select to authenticated using (true);
 create policy "Anyone can insert a broadcast" on public.broadcasts for insert to authenticated with check (auth.uid() = sender_id);
