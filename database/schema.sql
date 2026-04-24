@@ -110,6 +110,7 @@ create trigger handle_resources_updated_at
 -- Users: Read by all authenticated users, update by owner or admin
 alter table public.users enable row level security;
 create policy "Users are viewable by everyone" on public.users for select to authenticated using (true);
+create policy "Users can insert own profile" on public.users for insert to authenticated with check (auth.uid() = id);
 create policy "Users can update own profile" on public.users for update to authenticated using (auth.uid() = id);
 
 -- Reports: Viewable by everyone, insert by authenticated, update by owner or admin/assigned team

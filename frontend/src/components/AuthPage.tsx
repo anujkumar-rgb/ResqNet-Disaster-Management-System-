@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight } from 'lucide-react';
+import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { UserRole } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function AuthPage() {
   const { signIn: signInWithGoogle } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +23,7 @@ export default function AuthPage() {
     setError(null);
 
     try {
-      if (isLogin) {
+      if (activeTab === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -41,8 +42,8 @@ export default function AuthPage() {
         });
         
         if (signUpError) throw signUpError;
+        
         if (data.user) {
-          // Profile creation is handled by AuthContext trigger or explicit insert
           const role: UserRole = email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen';
           const { error: profileError } = await supabase.from('users').insert({
             id: data.user.id,
@@ -51,7 +52,16 @@ export default function AuthPage() {
             role: role,
             date_of_birth: dob,
           });
-          if (profileError) throw profileError;
+          
+          if (profileError) {
+            console.error("Profile creation error:", profileError);
+            // Even if profile insert fails here, AuthContext will attempt to bootstrap it on session load
+          }
+          
+          if (!signUpError) {
+            alert("Registration initiated! Please check your email for a confirmation link (if enabled) or proceed to login.");
+            setActiveTab('login');
+          }
         }
       }
     } catch (err: any) {
@@ -62,150 +72,194 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-dark flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-card-dark border border-gray-800 rounded-2xl overflow-hidden shadow-2xl relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-red via-brand-emerald to-brand-blue" />
-        
-        <div className="p-8">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-brand-red/10 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-brand-red/20">
+    <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center p-4 selection:bg-brand-red/30">
+      {/* Background Decor */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-red/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-emerald/5 blur-[120px] rounded-full" />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-[#111114] border border-white/5 rounded-3xl overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] relative z-10"
+      >
+        {/* Progress Bar Top */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+          <motion.div 
+            className="h-full bg-brand-red"
+            initial={{ width: '50%' }}
+            animate={{ width: activeTab === 'login' ? '50%' : '100%' }}
+          />
+        </div>
+
+        <div className="p-8 pt-10">
+          <div className="flex flex-col items-center mb-10">
+            <motion.div 
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-6 ring-1 ring-white/10"
+            >
               <Shield className="w-8 h-8 text-brand-red" />
-            </div>
-            <h1 className="text-2xl font-black text-white tracking-widest uppercase">Guardian Protocol</h1>
-            <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest font-mono">
-              {isLogin ? 'Tactical Access Portal' : 'Citizen Registration'}
+            </motion.div>
+            <h1 className="text-2xl font-black text-white tracking-[0.2em] uppercase italic">
+              RESQ<span className="text-brand-red">NET</span>
+            </h1>
+            <p className="text-gray-500 text-[10px] mt-2 uppercase tracking-[0.3em] font-mono font-bold">
+              Emergency Command Access
             </p>
           </div>
 
-          {error && (
-            <div className="mb-6 p-3 bg-brand-red/10 border border-brand-red/20 rounded-lg text-brand-red text-xs font-mono uppercase">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="ENTER NAME"
-                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-brand-red outline-none transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Date of Birth</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                    <input
-                      type="date"
-                      required
-                      value={dob}
-                      onChange={(e) => setDob(e.target.value)}
-                      className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-brand-red outline-none transition-all font-mono uppercase"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Email Terminal</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="EMAIL@PROTOCOL.SYS"
-                  className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-brand-red outline-none transition-all font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Secure Key</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-black/40 border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-brand-red outline-none transition-all font-mono"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-brand-red hover:bg-red-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all group overflow-hidden relative"
+          {/* Tabs */}
+          <div className="flex bg-black/40 p-1 rounded-xl mb-8 border border-white/5">
+            <button 
+              onClick={() => setActiveTab('login')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'}`}
             >
-              <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform" />
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
+              <LogIn className="w-3.5 h-3.5" />
+              Login
+            </button>
+            <button 
+              onClick={() => setActiveTab('register')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'register' ? 'bg-white/10 text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Register
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.form 
+              key={activeTab}
+              initial={{ opacity: 0, x: activeTab === 'login' ? -10 : 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: activeTab === 'login' ? 10 : -10 }}
+              onSubmit={handleSubmit} 
+              className="space-y-5"
+            >
+              {activeTab === 'register' && (
                 <>
-                  <span className="relative tracking-widest uppercase text-sm">
-                    {isLogin ? 'Initiate Login' : 'Execute Registration'}
-                  </span>
-                  <ArrowRight className="w-4 h-4 relative group-hover:translate-x-1 transition-transform" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Agent Full Name</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="ENTER LEGAL NAME"
+                        className="w-full bg-black/40 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Date of Birth</label>
+                    <div className="relative group">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
+                      <input
+                        type="date"
+                        required
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                        className="w-full bg-black/40 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all font-mono uppercase"
+                      />
+                    </div>
+                  </div>
                 </>
               )}
-            </button>
-          </form>
 
-          <div className="mt-8 flex flex-col gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Terminal Address (Email)</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="EMAIL@PROTOCOL.SYS"
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Encryption Key (Password)</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:border-brand-red/50 outline-none transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-brand-red text-[10px] font-mono uppercase leading-relaxed text-center"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-brand-red hover:bg-red-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all group relative overflow-hidden shadow-[0_10px_30px_-10px_rgba(220,38,38,0.5)]"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <span className="relative tracking-[0.2em] uppercase text-xs">
+                      {activeTab === 'login' ? 'Initiate Link' : 'Register Identity'}
+                    </span>
+                    <ArrowRight className="w-4 h-4 relative group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </motion.form>
+          </AnimatePresence>
+
+          <div className="mt-10 flex flex-col gap-5">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-800"></div>
+                <div className="w-full border-t border-white/5"></div>
               </div>
-              <div className="relative flex justify-center text-[8px] uppercase tracking-[0.2em] font-mono">
-                <span className="px-2 bg-card-dark text-gray-600">Alternative Authentication</span>
+              <div className="relative flex justify-center text-[8px] uppercase tracking-[0.3em] font-mono">
+                <span className="px-3 bg-[#111114] text-gray-600">Encrypted Bridge</span>
               </div>
             </div>
 
             <button
               onClick={() => signInWithGoogle()}
-              className="w-full bg-white/5 border border-gray-800 hover:border-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 transition-all"
+              className="w-full bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-4 transition-all group"
             >
-              <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100" alt="Google" />
-              <span className="text-xs uppercase tracking-widest">Override with Google</span>
-            </button>
-          </div>
-
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-xs text-gray-500 hover:text-brand-red transition-colors uppercase tracking-widest font-mono"
-            >
-              {isLogin ? "Status: No Account? Register Now" : "Status: Existing Agent? Deploy Login"}
+              <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt="Google" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">OAuth via Google</span>
             </button>
           </div>
         </div>
 
-        <div className="bg-black/20 p-4 flex justify-between items-center border-t border-gray-800">
-          <p className="text-[8px] text-gray-600 font-mono uppercase tracking-widest">
-            Protocol Version: 4.2.0-Alpha
+        <div className="bg-black/40 p-4 flex justify-between items-center border-t border-white/5">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-brand-emerald animate-pulse" />
+            <p className="text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em]">
+              Security Node: v4.2.0-Alpha
+            </p>
+          </div>
+          <p className="text-[8px] text-gray-700 font-mono uppercase tracking-[0.1em]">
+            {new Date().toLocaleTimeString()} UTC
           </p>
-          <div className="flex gap-2">
-            <div className="w-1 h-1 rounded-full bg-brand-emerald animate-pulse" />
-            <div className="w-1 h-1 rounded-full bg-brand-emerald animate-pulse delay-75" />
-            <div className="w-1 h-1 rounded-full bg-brand-emerald animate-pulse delay-150" />
-          </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
