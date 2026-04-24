@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { Shield, Mail, Lock, User, Calendar, Loader2, ArrowRight, UserPlus, LogIn, UserCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { UserRole } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,7 +30,6 @@ export default function AuthPage() {
         });
         if (error) throw error;
       } else {
-        // Sign up
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -53,19 +52,35 @@ export default function AuthPage() {
             date_of_birth: dob,
           });
           
-          if (profileError) {
-            console.error("Profile creation error:", profileError);
-            // Even if profile insert fails here, AuthContext will attempt to bootstrap it on session load
-          }
+          if (profileError) console.error(profileError);
           
           if (!signUpError) {
-            alert("Registration initiated! Please check your email for a confirmation link (if enabled) or proceed to login.");
+            alert("Registration successful! Check email for confirmation or login now.");
             setActiveTab('login');
           }
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication');
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInAnonymously({
+        options: {
+          data: {
+            full_name: 'Guest User (Demo)',
+          }
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError("Guest access is currently disabled. Please use registration or Google Auth.");
     } finally {
       setLoading(false);
     }
@@ -73,7 +88,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center p-4 selection:bg-brand-red/30">
-      {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-red/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-emerald/5 blur-[120px] rounded-full" />
@@ -82,9 +96,8 @@ export default function AuthPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-[#111114] border border-white/5 rounded-3xl overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] relative z-10"
+        className="max-w-md w-full bg-[#111114] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative z-10"
       >
-        {/* Progress Bar Top */}
         <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
           <motion.div 
             className="h-full bg-brand-red"
@@ -109,18 +122,17 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Tabs */}
           <div className="flex bg-black/40 p-1 rounded-xl mb-8 border border-white/5">
             <button 
               onClick={() => setActiveTab('login')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'login' ? 'bg-white/10 text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'login' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
             >
               <LogIn className="w-3.5 h-3.5" />
               Login
             </button>
             <button 
               onClick={() => setActiveTab('register')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'register' ? 'bg-white/10 text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'register' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
             >
               <UserPlus className="w-3.5 h-3.5" />
               Register
@@ -170,7 +182,7 @@ export default function AuthPage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Terminal Address (Email)</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Terminal Address</label>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
                   <input
@@ -185,7 +197,7 @@ export default function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Encryption Key (Password)</label>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Encryption Key</label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-red transition-colors" />
                   <input
@@ -200,13 +212,9 @@ export default function AuthPage() {
               </div>
 
               {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-brand-red text-[10px] font-mono uppercase leading-relaxed text-center"
-                >
+                <div className="p-3 bg-red-950/20 border border-red-500/20 rounded-xl text-brand-red text-[10px] font-mono uppercase text-center">
                   {error}
-                </motion.div>
+                </div>
               )}
 
               <button
@@ -214,9 +222,7 @@ export default function AuthPage() {
                 disabled={loading}
                 className="w-full bg-brand-red hover:bg-red-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 transition-all group relative overflow-hidden shadow-[0_10px_30px_-10px_rgba(220,38,38,0.5)]"
               >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                   <>
                     <span className="relative tracking-[0.2em] uppercase text-xs">
                       {activeTab === 'login' ? 'Initiate Link' : 'Register Identity'}
@@ -228,22 +234,31 @@ export default function AuthPage() {
             </motion.form>
           </AnimatePresence>
 
-          <div className="mt-10 flex flex-col gap-5">
-            <div className="relative">
+          <div className="mt-8 flex flex-col gap-4">
+            <button
+              onClick={handleGuestLogin}
+              disabled={loading}
+              className="w-full bg-brand-emerald/10 border border-brand-emerald/20 hover:bg-brand-emerald/20 text-brand-emerald font-bold py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all group"
+            >
+              <UserCheck className="w-4 h-4" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Explore as Guest (Demo)</span>
+            </button>
+
+            <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/5"></div>
               </div>
               <div className="relative flex justify-center text-[8px] uppercase tracking-[0.3em] font-mono">
-                <span className="px-3 bg-[#111114] text-gray-600">Encrypted Bridge</span>
+                <span className="px-3 bg-[#111114] text-gray-600">Alternative Bridge</span>
               </div>
             </div>
 
             <button
               onClick={() => signInWithGoogle()}
-              className="w-full bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-4 transition-all group"
+              className="w-full bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-3 transition-all"
             >
-              <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt="Google" />
-              <span className="text-[10px] uppercase tracking-[0.2em]">OAuth via Google</span>
+              <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100" alt="Google" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Sign in with Google</span>
             </button>
           </div>
         </div>
@@ -251,13 +266,9 @@ export default function AuthPage() {
         <div className="bg-black/40 p-4 flex justify-between items-center border-t border-white/5">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-brand-emerald animate-pulse" />
-            <p className="text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em]">
-              Security Node: v4.2.0-Alpha
-            </p>
+            <p className="text-[8px] text-gray-600 font-mono uppercase tracking-[0.2em]">Connected to Global Grid</p>
           </div>
-          <p className="text-[8px] text-gray-700 font-mono uppercase tracking-[0.1em]">
-            {new Date().toLocaleTimeString()} UTC
-          </p>
+          <p className="text-[8px] text-gray-700 font-mono uppercase tracking-[0.1em]">v4.2.0-Alpha</p>
         </div>
       </motion.div>
     </div>

@@ -60,9 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const role = user.email === 'anujkumarjha1508@gmail.com' ? 'admin' : 'citizen';
           const newProfile: UserProfile = {
             id: user.id,
-            email: user.email || '',
+            email: user.email || 'guest@demo.sys',
             role: role as UserRole,
-            display_name: user.user_metadata.full_name || 'Anonymous',
+            display_name: user.user_metadata?.full_name || 'Anonymous Guest',
           };
           const { data: createdProfile, error: insertError } = await supabase
             .from('users')
